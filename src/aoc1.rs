@@ -13,14 +13,15 @@ enum Aoc1Error {
     NoDuplicatesFoundError,
 }
 
-pub fn aoc1(part2: bool) {
+pub fn aoc1(part2: bool) -> Result<(), Error> {
     // This let binding is needed for stdin to live long enough
     let stdin = io::stdin();
     if part2 {
-        println!("First dup: {}", first_duplicate_freq(&mut stdin.lock()).expect("Error encountered: "));
+        println!("First dup: {}", first_duplicate_freq(&mut stdin.lock())?);
     } else {
-        println!("Sum: {}", sum_up_changes(&mut stdin.lock()).expect("Error encountered: "));
+        println!("Sum: {}", sum_up_changes(&mut stdin.lock())?);
     }
+    Ok(())
 }
 
 /// Parse a change like "+1" or "-1".

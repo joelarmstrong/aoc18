@@ -3,19 +3,20 @@ use std::collections::BTreeMap;
 use std::io::BufRead;
 use failure::Error;
 
-pub fn aoc2(part2: bool) {
+pub fn aoc2(part2: bool) -> Result<(), Error> {
     // This let binding is needed for stdin to live long enough
     let stdin = io::stdin();
     if part2 {
-        println!("Common letters: {}", run_part2(&mut stdin.lock()).expect("Encountered error"));
+        println!("Common letters: {}", run_part2(&mut stdin.lock())?);
     } else {
-        println!("Checksum: {}", run_part1(&mut stdin.lock()));
+        println!("Checksum: {}", run_part1(&mut stdin.lock())?);
     }
+    Ok(())
 }
 
-fn run_part1(input: &mut BufRead) -> u64 {
-    let box_ids = input.lines().collect::<Result<Vec<_>, _>>().expect("Can't read input");
-    checksum_boxes(&box_ids)
+fn run_part1(input: &mut BufRead) -> Result<u64, Error> {
+    let box_ids = input.lines().collect::<Result<Vec<_>, _>>()?;
+    Ok(checksum_boxes(&box_ids))
 }
 
 fn run_part2(input: &mut BufRead) -> Result<String, Error> {
@@ -24,6 +25,8 @@ fn run_part2(input: &mut BufRead) -> Result<String, Error> {
     Ok(find_common_letters(&closest_boxes))
 }
 
+/// Find a pair of "close" (only 1 letter different) box IDs, or None
+/// if there are no close box IDs.
 fn find_closest_boxes(box_ids: &Vec<String>) -> Option<(String, String)> {
     let desired_length = box_ids[0].len() - 1;
     // O(k*n^2) cause we dumb
@@ -37,10 +40,11 @@ fn find_closest_boxes(box_ids: &Vec<String>) -> Option<(String, String)> {
     None
 }
 
+/// Find which letters are shared in exactly the same position between
+/// two strings.
 fn find_common_letters(box_pair: &(String, String)) -> String {
     let box1_chars: Vec<_> = box_pair.0.chars().collect();
     let box2_chars: Vec<_> = box_pair.1.chars().collect();
-    let mut common = String::new();
     assert!(box1_chars.len() == box2_chars.len());
     box1_chars.iter()
         .zip(box2_chars.iter())
@@ -49,11 +53,15 @@ fn find_common_letters(box_pair: &(String, String)) -> String {
         .collect()
 }
 
+/// Check whether the string contains a letter repeated exactly k
+/// times.
 fn contains_letter_k_times(str: &str, k: u64) -> bool {
     let counts = str.chars().fold(BTreeMap::new(), |mut a, c| { *a.entry(c).or_insert(0) += 1; a });
     counts.values().find(|i| **i == k).is_some()
 }
 
+/// Calculate the checksum of box ids ((# of letters repeated twice) *
+/// (# of letters repeated thrice)).
 fn checksum_boxes(box_ids: &Vec<String>) -> u64 {
     let two_count: u64 = box_ids.iter().map(|s| if contains_letter_k_times(s, 2) { 1 } else { 0 }).sum();
     let three_count: u64 = box_ids.iter().map(|s| if contains_letter_k_times(s, 3) { 1 } else { 0 }).sum();
@@ -63,16 +71,6 @@ fn checksum_boxes(box_ids: &Vec<String>) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fmt::Debug;
-
-    /// This function allows us to assert that a Result is
-    /// Ok(expected) without requiring PartialEq on the Error type.
-    fn assert_result_ok<T: Debug + PartialEq>(r: Result<T, Error>, expected: T) {
-        match r {
-            Ok(v) => assert_eq!(v, expected),
-            Err(e) => panic!("got error result {}", e),
-        }
-    }
 
     #[test]
     fn test_contains_letter_k_times() {
@@ -109,6 +107,17 @@ mod tests {
             "wvxyz",
         ].iter().map(|s| s.to_string()).collect();
         assert_eq!(find_closest_boxes(&input), Some(("fghij".to_string(), "fguij".to_string())));
+
+        // Try one without any close boxes
+        let input2: Vec<String> = vec![
+            "abcde",
+            "fghij",
+            "klmno",
+            "pqrst",
+            "axcye",
+            "wvxyz",
+        ].iter().map(|s| s.to_string()).collect();
+        assert_eq!(find_closest_boxes(&input2), None);
     }
 
     #[test]
