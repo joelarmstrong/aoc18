@@ -7,15 +7,46 @@ pub fn aoc2(part2: bool) {
     // This let binding is needed for stdin to live long enough
     let stdin = io::stdin();
     if part2 {
-        panic!("nope");
+        println!("Common letters: {}", run_part2(&mut stdin.lock()).expect("Encountered error"));
     } else {
-        println!("Checksum: {}", part1(&mut stdin.lock()));
+        println!("Checksum: {}", run_part1(&mut stdin.lock()));
     }
 }
 
-fn part1(input: &mut BufRead) -> u64 {
+fn run_part1(input: &mut BufRead) -> u64 {
     let box_ids = input.lines().collect::<Result<Vec<_>, _>>().expect("Can't read input");
     checksum_boxes(&box_ids)
+}
+
+fn run_part2(input: &mut BufRead) -> Result<String, Error> {
+    let box_ids = input.lines().collect::<Result<Vec<_>, _>>()?;
+    let closest_boxes = find_closest_boxes(&box_ids).expect("No close boxes found");
+    Ok(find_common_letters(&closest_boxes))
+}
+
+fn find_closest_boxes(box_ids: &Vec<String>) -> Option<(String, String)> {
+    let desired_length = box_ids[0].len() - 1;
+    // O(k*n^2) cause we dumb
+    for box_id1 in box_ids {
+        for box_id2 in box_ids {
+            if find_common_letters(&(box_id1.to_string(), box_id2.to_string())).len() == desired_length {
+                return Some((box_id1.to_string(), box_id2.to_string()))
+            }
+        }
+    }
+    None
+}
+
+fn find_common_letters(box_pair: &(String, String)) -> String {
+    let box1_chars: Vec<_> = box_pair.0.chars().collect();
+    let box2_chars: Vec<_> = box_pair.1.chars().collect();
+    let mut common = String::new();
+    assert!(box1_chars.len() == box2_chars.len());
+    box1_chars.iter()
+        .zip(box2_chars.iter())
+        .filter(|(c1, c2)| c1 == c2)
+        .map(|(c1, _)| c1)
+        .collect()
 }
 
 fn contains_letter_k_times(str: &str, k: u64) -> bool {
@@ -64,5 +95,28 @@ mod tests {
             "ababab",
         ].iter().map(|s| s.to_string()).collect();
         assert_eq!(checksum_boxes(&input), 12);
+    }
+
+    #[test]
+    fn test_find_closest_boxes() {
+        let input: Vec<String> = vec![
+            "abcde",
+            "fghij",
+            "klmno",
+            "pqrst",
+            "fguij",
+            "axcye",
+            "wvxyz",
+        ].iter().map(|s| s.to_string()).collect();
+        assert_eq!(find_closest_boxes(&input), Some(("fghij".to_string(), "fguij".to_string())));
+    }
+
+    #[test]
+    fn test_common_letters() {
+        let pair: (String, String) = (
+            "fghij".to_string(),
+            "fguij".to_string(),
+        );
+        assert_eq!(find_common_letters(&pair), "fgij");
     }
 }
