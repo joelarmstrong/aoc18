@@ -25,7 +25,7 @@ pub fn aoc1(part2: bool) -> Result<(), Error> {
 }
 
 /// Parse a change like "+1" or "-1".
-fn parse_change(line: &String) -> Result<i64, Error> {
+fn parse_change(line: &str) -> Result<i64, Error> {
     let change: i64 = line.parse()
         .or_else(|_| Err(Aoc1Error::ParseChangeError {string: line.to_string()}))?;
     Ok(change)

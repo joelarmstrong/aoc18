@@ -27,7 +27,7 @@ fn run_part2(input: &mut BufRead) -> Result<String, Error> {
 
 /// Find a pair of "close" (only 1 letter different) box IDs, or None
 /// if there are no close box IDs.
-fn find_closest_boxes(box_ids: &Vec<String>) -> Option<(String, String)> {
+fn find_closest_boxes(box_ids: &[String]) -> Option<(String, String)> {
     let desired_length = box_ids[0].len() - 1;
     // O(k*n^2) cause we dumb
     for box_id1 in box_ids {
@@ -57,12 +57,12 @@ fn find_common_letters(box_pair: &(String, String)) -> String {
 /// times.
 fn contains_letter_k_times(str: &str, k: u64) -> bool {
     let counts = str.chars().fold(BTreeMap::new(), |mut a, c| { *a.entry(c).or_insert(0) += 1; a });
-    counts.values().find(|i| **i == k).is_some()
+    counts.values().any(|i| *i == k)
 }
 
 /// Calculate the checksum of box ids ((# of letters repeated twice) *
 /// (# of letters repeated thrice)).
-fn checksum_boxes(box_ids: &Vec<String>) -> u64 {
+fn checksum_boxes(box_ids: &[String]) -> u64 {
     let two_count: u64 = box_ids.iter().map(|s| if contains_letter_k_times(s, 2) { 1 } else { 0 }).sum();
     let three_count: u64 = box_ids.iter().map(|s| if contains_letter_k_times(s, 3) { 1 } else { 0 }).sum();
     two_count * three_count
