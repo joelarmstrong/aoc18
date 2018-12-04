@@ -3,12 +3,15 @@ use std::io::BufRead;
 use failure::Error;
 
 pub fn aoc3(part2: bool) -> Result<(), Error> {
-    // This let binding is needed for stdin to live long enough
     let stdin = io::stdin();
+    let claims: Vec<Claim> = stdin.lock().lines().flat_map(|l_r| l_r.map(|l| parse_claim(&l))).collect::<Result<_,_>>()?;
     if part2 {
-        unimplemented!();
+        if let Some(claim) = find_intact_claim(&claims) {
+            println!("First intact claim found: {}", claim.id);
+        } else {
+            bail!("Couldn't find any intact claim");
+        }
     } else {
-        let claims: Vec<Claim> = stdin.lock().lines().flat_map(|l_r| l_r.map(|l| parse_claim(&l))).collect::<Result<_,_>>()?;
         let overlap = calculate_overlap(&claims);
         println!("Overlapping squares: {}", overlap);
     }
@@ -66,7 +69,6 @@ struct Fabric {
 impl Fabric {
     fn new(width: usize, height: usize) -> Self {
         Fabric {
-            width: width,
             height: height,
             covered_once: vec![0; (width * height / 8) + 1],
             covered_twice: vec![0; (width * height / 8) + 1],
@@ -86,23 +88,54 @@ impl Fabric {
         }
     }
 
+    fn add_claims(&mut self, claims: &[Claim]) {
+        for claim in claims {
+            for x in claim.x..claim.x + claim.width {
+                for y in claim.y..claim.y + claim.height {
+                    self.add_coverage(x as usize, y as usize)
+                }
+            }
+        }
+    }
+
+    fn covered_exactly_once(&self, width: usize, height: usize) -> bool {
+        let index = self.index(width, height);
+        let covered_once = self.covered_once[index] & (0x1 << (height % 8));
+        let covered_twice = self.covered_twice[index] & (0x1 << (height % 8));
+        covered_once > 0 && covered_twice == 0
+    }
+
     fn total_overlap(&self) -> u64 {
         self.covered_twice.iter().map(|x| x.count_ones() as u64).sum()
     }
 }
 
-fn calculate_overlap(claims: &[Claim]) -> u64 {
+fn create_minimal_fabric(claims: &[Claim]) -> Fabric {
     let fabric_width: u64 = claims.iter().map(|c| c.x + c.width).max().unwrap_or(0);
     let fabric_height: u64 = claims.iter().map(|c| c.y + c.height).max().unwrap_or(0);
-    let mut fabric = Fabric::new(fabric_width as usize, fabric_height as usize);
-    for claim in claims {
+    Fabric::new(fabric_width as usize, fabric_height as usize)
+}
+
+fn calculate_overlap(claims: &[Claim]) -> u64 {
+    let mut fabric = create_minimal_fabric(claims);
+    fabric.add_claims(claims);
+    fabric.total_overlap()
+}
+
+fn find_intact_claim(claims: &[Claim]) -> Option<&Claim> {
+    let mut fabric = create_minimal_fabric(claims);
+    fabric.add_claims(claims);
+    'claim_loop: for claim in claims {
         for x in claim.x..claim.x + claim.width {
             for y in claim.y..claim.y + claim.height {
-                fabric.add_coverage(x as usize, y as usize)
+                if !fabric.covered_exactly_once(x as usize, y as usize) {
+                    continue 'claim_loop;
+                }
             }
         }
+        return Some(claim);
     }
-    fabric.total_overlap()
+    None
 }
 
 #[cfg(test)]
@@ -156,5 +189,33 @@ mod tests {
             },
         ];
         assert_eq!(calculate_overlap(&claims), 4);
+    }
+
+    #[test]
+    fn test_find_intact_claim() {
+        let claims = vec![
+            Claim {
+                id: 1,
+                x: 1,
+                y: 3,
+                width: 4,
+                height: 4,
+            },
+            Claim {
+                id: 2,
+                x: 3,
+                y: 1,
+                width: 4,
+                height: 4,
+            },
+            Claim {
+                id: 3,
+                x: 5,
+                y: 5,
+                width: 2,
+                height: 2,
+            },
+        ];
+        assert_eq!(find_intact_claim(&claims), Some(&claims[2]));
     }
 }
