@@ -1,5 +1,6 @@
 extern crate clap;
 extern crate regex;
+#[cfg(test)]
 extern crate rand;
 #[macro_use]
 extern crate failure;

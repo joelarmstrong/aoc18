@@ -10,10 +10,11 @@ pub fn aoc4(part2: bool) -> Result<(), Error> {
     let sorted_string = sort_times(stdin.lock())?;
     let shifts = parse_shifts(sorted_string.as_bytes())?;
     if part2 {
-        unimplemented!();
+        let (guard_id, minute) = find_sleepy_minute_all_guards(&shifts);
+        println!("ID: {}, minute: {}, product: {}", guard_id, minute, (guard_id as usize) * minute);
     } else {
-        let guard_id = find_sleepiest_guard(&shifts).ok_or(format_err!("No sleepiest guard found"))?;
-        let sleepiest_minute = find_sleepiest_minute(&shifts, guard_id) as u64;
+        let guard_id = find_sleepiest_guard(&shifts).ok_or_else(|| format_err!("No sleepiest guard found"))?;
+        let sleepiest_minute = u64::from(find_sleepiest_minute(&shifts, guard_id));
         println!("ID: {}, minute: {}, product: {}", guard_id, sleepiest_minute, guard_id * sleepiest_minute);
     }
     Ok(())
@@ -36,6 +37,24 @@ fn find_sleepiest_guard(shifts: &[GuardShift]) -> Option<u64> {
     guard_to_time_asleep.iter().max_by_key(|(_k, v)| *v).map(|(k, _v)| *k)
 }
 
+fn find_sleepy_minute_all_guards(shifts: &[GuardShift]) -> (u64, usize) {
+    let mut guard_to_minutes: BTreeMap<u64, [u64; 60]> = BTreeMap::new();
+    for shift in shifts {
+        let minutes = guard_to_minutes.entry(shift.id).or_insert([0; 60]);
+        for sleep in &shift.sleeps {
+            for minute in sleep.clone() {
+                minutes[minute as usize] += 1;
+            }
+        }
+    }
+    let (id, (min, _asleep)) = guard_to_minutes
+        .iter()
+        .map(|(id, v)| (id, v.iter().enumerate().max_by_key(|(_minute, asleep)| *asleep).unwrap()))
+        .max_by_key(|(_id, (_minute, asleep))| *asleep)
+        .unwrap();
+    (*id, min)
+}
+
 fn find_sleepiest_minute(shifts: &[GuardShift], guard_id: u64) -> u8 {
     let mut minutes = [0; 60];
     for shift in shifts.iter().filter(|g| g.id == guard_id) {
@@ -48,20 +67,22 @@ fn find_sleepiest_minute(shifts: &[GuardShift], guard_id: u64) -> u8 {
     minutes.iter().enumerate().max_by_key(|(_i, value)| *value).map(|(i, _value)| i as u8).unwrap()
 }
 
+type Time = (u32, u32, u32, u32, u32);
+
 fn sort_times(input: impl BufRead) -> Result<String, Error> {
     let time_regex = Regex::new(r"\[(\d+)-(\d+)-(\d+) (\d+):(\d+)\]")?;
-    let mut lines_and_times: Vec<((u32, u32, u32, u32, u32), String)> = vec![];
+    let mut lines_and_times: Vec<(Time, String)> = vec![];
     for line_result in input.lines() {
         let line = line_result?;
         if line.is_empty() {
             continue;
         }
-        let time_captures = time_regex.captures(&line).ok_or(format_err!("no time in line {}", line))?;
-        let time_parts: (u32, u32, u32, u32, u32) = (time_captures[1].parse().unwrap(),
-                                                     time_captures[2].parse().unwrap(),
-                                                     time_captures[3].parse().unwrap(),
-                                                     time_captures[4].parse().unwrap(),
-                                                     time_captures[5].parse().unwrap());
+        let time_captures = time_regex.captures(&line).ok_or_else(|| format_err!("no time in line {}", line))?;
+        let time_parts: Time = (time_captures[1].parse().unwrap(),
+                                time_captures[2].parse().unwrap(),
+                                time_captures[3].parse().unwrap(),
+                                time_captures[4].parse().unwrap(),
+                                time_captures[5].parse().unwrap());
         lines_and_times.push((time_parts, line.clone()));
     }
     lines_and_times.sort();
@@ -72,8 +93,6 @@ fn sort_times(input: impl BufRead) -> Result<String, Error> {
 fn parse_shifts(input: impl BufRead) -> Result<Vec<GuardShift>, Error> {
     let min_regex = Regex::new(r"\[\d+-\d+-\d+ \d+:(?P<min>\d+)\]")?;
     let begins_shift = Regex::new(r"Guard #(?P<id>\d+) begins shift$")?;
-    let falls_asleep = Regex::new(r"falls asleep$")?;
-    let wakes_up = Regex::new(r"wakes up$")?;
 
     let mut shifts = vec![];
     // Guard on the current shift
@@ -88,7 +107,7 @@ fn parse_shifts(input: impl BufRead) -> Result<Vec<GuardShift>, Error> {
             // Empty line, skip
             continue
         }
-        let captures = min_regex.captures(&line).ok_or(format_err!("no time in line {}", line))?;
+        let captures = min_regex.captures(&line).ok_or_else(|| format_err!("no time in line {}", line))?;
         let minute: u8 = captures[1].parse()?;
         if let Some(captures) = begins_shift.captures(&line) {
             if let Some(prev_guard_id) = guard_id {
@@ -97,10 +116,10 @@ fn parse_shifts(input: impl BufRead) -> Result<Vec<GuardShift>, Error> {
                 cur_sleeps = vec![];
             }
             guard_id = Some(captures[1].parse()?);
-        } else if falls_asleep.is_match(&line) {
+        } else if line.ends_with("falls asleep") {
             sleep_start = Some(minute);
-        } else if wakes_up.is_match(&line) {
-            let start = sleep_start.ok_or(format_err!("Guard {:?} woke up before falling asleep", guard_id))?;
+        } else if line.ends_with("wakes up") {
+            let start = sleep_start.ok_or_else(|| format_err!("Guard {:?} woke up before falling asleep", guard_id))?;
             cur_sleeps.push(start..minute);
             sleep_start = None;
         } else {
@@ -198,5 +217,13 @@ mod tests {
         let shuffled_string: String = lines.join("\n");
         let sorted = sort_times(shuffled_string.as_bytes());
         assert_eq!(sorted.unwrap(), TIME_STRING.trim());
+    }
+
+    #[test]
+    fn test_find_sleepy_minute_all_guards() {
+        let shifts = parse_shifts(TIME_STRING.as_bytes()).expect("Can't parse shifts");
+        let (guard_id, minute) = find_sleepy_minute_all_guards(&shifts);
+        assert_eq!(guard_id, 99);
+        assert_eq!(minute, 45);
     }
 }
