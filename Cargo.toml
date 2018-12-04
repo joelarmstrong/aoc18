@@ -6,3 +6,5 @@ authors = ["Joel Armstrong <jcarmstr@ucsc.edu>"]
 [dependencies]
 clap = "2.32"
 failure = "0.1.3"
+regex = "1"
+rand = "0.6"
