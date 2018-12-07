@@ -1,7 +1,7 @@
 use std::io;
 use std::io::BufRead;
 use std::collections::BTreeMap;
-use failure::Error;
+use failure::{Error, format_err, bail};
 use regex::Regex;
 use std::ops::Range;
 

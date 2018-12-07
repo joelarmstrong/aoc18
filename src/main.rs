@@ -1,10 +1,3 @@
-extern crate clap;
-extern crate regex;
-#[cfg(test)]
-extern crate rand;
-#[macro_use]
-extern crate failure;
-
 pub mod aoc1;
 pub mod aoc2;
 pub mod aoc3;

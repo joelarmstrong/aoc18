@@ -1,7 +1,7 @@
 use std::io;
 use std::collections::BTreeSet;
 use std::io::BufRead;
-use failure::Error;
+use failure::{Error, Fail};
 
 #[derive(Debug, Fail)]
 enum Aoc1Error {

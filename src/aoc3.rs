@@ -1,6 +1,6 @@
 use std::io;
 use std::io::BufRead;
-use failure::Error;
+use failure::{Error, bail, ensure};
 
 pub fn aoc3(part2: bool) -> Result<(), Error> {
     let stdin = io::stdin();

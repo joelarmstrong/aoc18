@@ -14,12 +14,12 @@ pub fn aoc2(part2: bool) -> Result<(), Error> {
     Ok(())
 }
 
-fn run_part1(input: &mut BufRead) -> Result<u64, Error> {
+fn run_part1(input: &mut dyn BufRead) -> Result<u64, Error> {
     let box_ids = input.lines().collect::<Result<Vec<_>, _>>()?;
     Ok(checksum_boxes(&box_ids))
 }
 
-fn run_part2(input: &mut BufRead) -> Result<String, Error> {
+fn run_part2(input: &mut dyn BufRead) -> Result<String, Error> {
     let box_ids = input.lines().collect::<Result<Vec<_>, _>>()?;
     let closest_boxes = find_closest_boxes(&box_ids).expect("No close boxes found");
     Ok(find_common_letters(&closest_boxes))
