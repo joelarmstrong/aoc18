@@ -6,6 +6,7 @@ use failure::{Error, format_err};
 pub fn aoc6(part2: bool) -> Result<(), Error> {
     let coords = parse_coords(&mut io::stdin().lock())?;
     if part2 {
+        println!("Size of close region: {}", size_of_close_region(&coords, 10000).expect("Couldn't find close region"));
     } else {
         println!("Largest non-infinite area: {}", largest_non_infinite_area(&coords).expect("Couldn't find area"));
     }
@@ -77,6 +78,21 @@ fn largest_non_infinite_area(coords: &[Coord]) -> Option<u64> {
     Some(*counts.values().max()?)
 }
 
+fn size_of_close_region(coords: &[Coord], close_distance: i64) -> Option<u64> {
+    let bbox = get_bounding_box(&coords)?;
+    let mut area = 0;
+    for x in bbox.0..=bbox.1 {
+        for y in bbox.2..=bbox.3 {
+            let point = Coord { x, y };
+            let distance_sum: i64 = coords.iter().map(|c| point.distance(c)).sum();
+            if distance_sum < close_distance {
+                area += 1;
+            }
+        }
+    }
+    Some(area)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -121,5 +137,11 @@ mod tests {
     fn test_largest_non_infinite_area() {
         let coords = parse_coords(&mut COORDS.as_bytes()).expect("Couldn't parse coordinates");
         assert_eq!(largest_non_infinite_area(&coords), Some(17))
+    }
+
+    #[test]
+    fn test_size_of_close_region() {
+        let coords = parse_coords(&mut COORDS.as_bytes()).expect("Couldn't parse coordinates");
+        assert_eq!(size_of_close_region(&coords, 32), Some(16))
     }
 }
