@@ -49,16 +49,6 @@ fn react_removing_most_problematic(polymer: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fmt::Debug;
-
-    /// This function allows us to assert that a Result is
-    /// Ok(expected) without requiring PartialEq on the Error type.
-    fn assert_result_ok<T: Debug + PartialEq>(r: Result<T, Error>, expected: T) {
-        match r {
-            Ok(v) => assert_eq!(v, expected),
-            Err(e) => panic!("got Err: {}, local backtrace: {}", e, e.backtrace()),
-        }
-    }
 
     #[test]
     fn test_react() {
