@@ -8,6 +8,7 @@ pub mod aoc7;
 pub mod aoc8;
 pub mod aoc9;
 pub mod aoc10;
+pub mod aoc11;
 use clap::{Arg, App, SubCommand};
 use failure::Error;
 
@@ -33,6 +34,8 @@ fn main() -> Result<(), Error> {
                     .arg(Arg::with_name("part2")))
         .subcommand(SubCommand::with_name("aoc10")
                     .arg(Arg::with_name("part2")))
+        .subcommand(SubCommand::with_name("aoc11")
+                    .arg(Arg::with_name("part2")))
         .get_matches();
     match matches.subcommand() {
         ("aoc1", Some(sub_matches)) => aoc1::aoc1(sub_matches.is_present("part2"))?,
@@ -45,6 +48,7 @@ fn main() -> Result<(), Error> {
         ("aoc8", Some(sub_matches)) => aoc8::aoc8(sub_matches.is_present("part2"))?,
         ("aoc9", Some(sub_matches)) => aoc9::aoc9(sub_matches.is_present("part2"))?,
         ("aoc10", Some(sub_matches)) => aoc10::aoc10(sub_matches.is_present("part2"))?,
+        ("aoc11", Some(sub_matches)) => aoc11::aoc11(sub_matches.is_present("part2"))?,
         _ => panic!("Invalid subcommand")
     }
     Ok(())
