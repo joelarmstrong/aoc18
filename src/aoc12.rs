@@ -14,12 +14,9 @@ pub fn aoc12(part2: bool) -> Result<(), Error> {
     stdin.lock().read_line(&mut line)?;
     let rules = parse_rules(&mut stdin.lock())?;
     let mut pc = PlantCells::new(initial_state, rules);
-    if part2 {
-
-    } else {
-        pc.advance_n_steps(20);
-        println!("Sum after 20 steps: {}", pc.sum());
-    }
+    let num_steps = if part2 { 50000000000 } else { 20 };
+    pc.advance_n_steps(num_steps);
+    println!("Sum after {} steps: {}", num_steps, pc.sum());
     Ok(())
 }
 
@@ -67,8 +64,22 @@ impl PlantCells {
     }
 
     fn advance_n_steps(&mut self, n: u64) {
-        for _ in 0..n {
+        // Timestep at which we last saw a given configuration.
+        let mut last_seen = HashMap::new();
+        for i in 0..n {
             self.advance();
+            if let Some((j, prev_start)) = last_seen.get(&self.cells) {
+                // Found a cycle.
+                let cycle_length = i - j;
+                let start_delta = self.start_index - prev_start;
+                let remainder = (n - i - 1) % cycle_length;
+                for _ in 0..remainder {
+                    self.advance();
+                }
+                self.start_index += start_delta * (((n - i - 1) / cycle_length) as i64);
+                break;
+            }
+            last_seen.insert(self.cells.clone(), (i, self.start_index));
         }
     }
 
@@ -193,6 +204,21 @@ mod tests {
         pc.advance_n_steps(19);
         assert_eq!(format!("{}", pc), "#....##....#####...#######....#.#..##");
         assert_eq!(pc.start_index, -2);
+    }
+
+    #[test]
+    fn test_plantcells_advance_giant_steps() {
+        let state = parse_initial_state(STATE).expect("Couldn't parse state");
+        let rules = parse_rules(&mut RULES.as_bytes()).expect("Couldn't parse rules");
+        let mut pc1 = PlantCells::new(state.clone(), rules.clone());
+        let mut pc2 = PlantCells::new(state, rules);
+        pc1.advance_n_steps(867);
+        for _ in 0..867 {
+            pc2.advance();
+        }
+        assert_eq!(format!("{}", pc1), format!("{}", pc2));
+        assert_eq!(pc1.start_index, pc2.start_index);
+        assert_eq!(pc1.sum(), pc2.sum());
     }
 
     #[test]
