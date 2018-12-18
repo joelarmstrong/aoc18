@@ -34,7 +34,7 @@ struct Node<T> {
 }
 
 impl<T> Node<T> {
-    fn new(value: T) -> Rc<RefCell<Self>> {
+    fn new_rc(value: T) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Node {
             next: None,
             prev: None,
@@ -131,12 +131,12 @@ struct Marbles {
 
 impl Marbles {
     fn new(num_players: usize) -> Self {
-        let mut node = Node::new(0);
+        let mut node = Node::new_rc(0);
         Node::circularize(&mut node);
         Marbles {
             cur_node: node,
             num_marbles: 1,
-            num_players: num_players,
+            num_players,
             cur_player: 0,
             scores: vec![0; num_players],
         }
@@ -152,10 +152,10 @@ impl Marbles {
             self.scores[self.cur_player] += marble_to_remove.borrow().value;
             self.cur_node = next_marble;
         } else {
-            let iter = Node::iter(&mut self.cur_node);
-            let mut insert_node = iter.skip(1).next().unwrap();
+            let mut iter = Node::iter(&mut self.cur_node);
+            let mut insert_node = iter.nth(1).unwrap();
             Node::insert(&mut insert_node, self.num_marbles);
-            self.cur_node = Node::iter(&mut insert_node).skip(1).next().unwrap();
+            self.cur_node = Node::iter(&mut insert_node).nth(1).unwrap();
         }
         self.num_marbles += 1;
         self.cur_player = (self.cur_player + 1) % self.num_players;
@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_simple_linked_list() {
-        let mut node_1 = Node::new("foo");
+        let mut node_1 = Node::new_rc("foo");
         Node::insert(&mut node_1, "bar");
         Node::insert(&mut node_1, "baz");
         // Check that the values are in the order that we expect
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_circularized_list() {
-        let mut node_1 = Node::new("foo");
+        let mut node_1 = Node::new_rc("foo");
         Node::circularize(&mut node_1);
         let node_iter = Node::iter(&mut node_1);
         let values: Vec<_> = node_iter.take(5).map(|n| n.borrow().value).collect();

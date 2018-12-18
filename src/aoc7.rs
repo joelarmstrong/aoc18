@@ -23,7 +23,7 @@ fn parse_dependency_graph(input: &mut impl BufRead) -> Result<HashMap<char, Vec<
         let captures = edge_regex.captures(&line).unwrap();
         let required_step = captures.get(1).unwrap().as_str().chars().last().unwrap();
         let dependent_step = captures.get(2).unwrap().as_str().chars().last().unwrap();
-        (*graph.entry(required_step).or_insert(vec![])).push(dependent_step);
+        (*graph.entry(required_step).or_insert_with(|| vec![])).push(dependent_step);
     }
     Ok(graph)
 }
@@ -41,7 +41,7 @@ fn toposort(graph: &HashMap<char, Vec<char>>) -> Result<Vec<char>, Error> {
     // ensure we always get the alphabetically first character that is
     // ready.
     let mut ready_nodes: BinaryHeap<Reverse<char>> = graph.keys().filter(|n| !incoming_edges.contains_key(n)).map(|&r| Reverse(r)).collect();
-    while ready_nodes.len() != 0 {
+    while !ready_nodes.is_empty() {
         let node = ready_nodes.pop().unwrap();
         sorted.push(node.0);
         for adjacency in graph.get(&node.0).unwrap_or(&vec![]) {
@@ -62,11 +62,11 @@ struct WorkedNode {
 
 impl WorkedNode {
     fn new(node: char, base_seconds: u64, cur_time: u64) -> Self {
-        let a: u8 = "A".as_bytes()[0];
+        let a: u8 = b"A"[0];
         let mut char: [u8; 4] = [0; 4];
         node.encode_utf8(&mut char);
         WorkedNode {
-            node: node,
+            node,
             completion_time: cur_time + base_seconds + u64::from(char[0] - a + 1),
         }
     }
@@ -82,15 +82,15 @@ fn seconds_to_completion(graph: &HashMap<char, Vec<char>>, base_seconds: u64, nu
     let mut ready_nodes: BinaryHeap<Reverse<char>> = graph.keys().filter(|n| !incoming_edges.contains_key(n)).map(|&r| Reverse(r)).collect();
     let mut nodes_in_progress: BinaryHeap<Reverse<WorkedNode>> = BinaryHeap::new();
     let mut cur_time: u64 = 0;
-    while nodes_in_progress.len() != 0 || ready_nodes.len() != 0 {
-        if ready_nodes.len() > 0 && nodes_in_progress.len() < num_workers {
+    while !nodes_in_progress.is_empty() || !ready_nodes.is_empty() {
+        if !ready_nodes.is_empty() && nodes_in_progress.len() < num_workers {
             // We can take a ready node and begin it.
             let node = ready_nodes.pop().unwrap();
-            nodes_in_progress.push(Reverse(WorkedNode::new(node.0, base_seconds, cur_time.into())));
+            nodes_in_progress.push(Reverse(WorkedNode::new(node.0, base_seconds, cur_time)));
             continue;
         }
         if let Some(worked_node) = nodes_in_progress.pop() {
-            let completion_time = u64::from(worked_node.0.completion_time);
+            let completion_time = worked_node.0.completion_time;
             assert!(cur_time <= completion_time);
             cur_time = completion_time;
             for adjacency in graph.get(&worked_node.0.node).unwrap_or(&vec![]) {

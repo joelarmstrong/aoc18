@@ -14,7 +14,7 @@ pub fn aoc12(part2: bool) -> Result<(), Error> {
     stdin.lock().read_line(&mut line)?;
     let rules = parse_rules(&mut stdin.lock())?;
     let mut pc = PlantCells::new(initial_state, rules);
-    let num_steps = if part2 { 50000000000 } else { 20 };
+    let num_steps = if part2 { 50_000_000_000 } else { 20 };
     pc.advance_n_steps(num_steps);
     println!("Sum after {} steps: {}", num_steps, pc.sum());
     Ok(())
@@ -59,7 +59,7 @@ impl PlantCells {
             }
         }
         // Count and remove any extra trailing elements at the end.
-        let extra_elems = self.cells.iter().rev().take_while(|&&c| c == false).count();
+        let extra_elems = self.cells.iter().rev().take_while(|&&c| !c).count();
         self.cells.resize(self.cells.len() - extra_elems, false);
     }
 

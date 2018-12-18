@@ -142,9 +142,9 @@ impl Display for ParticleField {
             array_2d[(particle.y - min_y) as usize][(particle.x - min_x) as usize] = true;
         }
 
-        for y in 0..(height as usize) {
-            let string: String = array_2d[y].iter().map(|b| if *b { '#' } else { '.' }).collect();
-            write!(f, "{}\n", string)?;
+        for row in array_2d.iter() {
+            let string: String = row.iter().map(|b| if *b { '#' } else { '.' }).collect();
+            writeln!(f, "{}", string)?;
         }
         Ok(())
     }

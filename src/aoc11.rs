@@ -42,7 +42,7 @@ impl FuelCells {
                 let mut sum: i64 = 0;
                 for x2 in x..x+height {
                     for y2 in y..y+width {
-                        sum += self.cells[x2][y2] as i64;
+                        sum += i64::from(self.cells[x2][y2]);
                     }
                 }
                 if sum > best_sum {
@@ -83,16 +83,6 @@ fn power_level(x: usize, y: usize, serial: usize) -> i8 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fmt::Debug;
-
-    /// This function allows us to assert that a Result is
-    /// Ok(expected) without requiring PartialEq on the Error type.
-    fn assert_result_ok<T: Debug + PartialEq>(r: Result<T, Error>, expected: T) {
-        match r {
-            Ok(v) => assert_eq!(v, expected),
-            Err(e) => panic!("got Err: {}, local backtrace: {}", e, e.backtrace()),
-        }
-    }
 
     #[test]
     fn test_power_level() {
@@ -111,7 +101,7 @@ mod tests {
         assert_eq!(fc.find_largest_square(3, 3), ((21, 61), 30));
     }
 
-    #[test]
+    #[test] #[ignore]
     fn test_find_largest_total_square() {
         let fc = FuelCells::new(18);
         assert_eq!(fc.find_largest_total_square(), ((90, 269), 16));

@@ -30,7 +30,7 @@ impl Tree {
 fn parse_tree(input: &mut BufRead) -> Result<Tree, Error> {
     let mut contents = String::new();
     input.read_to_string(&mut contents)?;
-    let fields: Vec<u64> = contents.trim().split(" ").map(|s| s.parse::<u64>()).collect::<Result<_, _>>()?;
+    let fields: Vec<u64> = contents.trim().split(' ').map(|s| s.parse::<u64>()).collect::<Result<_, _>>()?;
     let root = parse_node(&mut fields.into_iter())?;
     Ok(root)
 }
@@ -52,11 +52,11 @@ fn parse_node(fields: &mut impl Iterator<Item = u64>) -> Result<Tree, Error> {
 fn sum_metadata_entries(tree: &Tree) -> u64 {
     let children_sum: u64 = tree.children.iter().map(sum_metadata_entries).sum();
     let my_sum: u64 = tree.metadata.iter().sum();
-    return children_sum + my_sum
+    children_sum + my_sum
 }
 
 fn tree_value(tree: &Tree) -> u64 {
-    if tree.children.len() == 0 {
+    if tree.children.is_empty() {
         sum_metadata_entries(tree)
     } else {
         let mut sum = 0;
