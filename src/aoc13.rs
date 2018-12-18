@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-use std::fmt;
-use std::fmt::Display;
 use std::io;
 use std::io::BufRead;
 use failure::{Error, bail};
@@ -9,6 +6,7 @@ use crate::aoc6::Coord;
 pub fn aoc13(part2: bool) -> Result<(), Error> {
     let mut tracks = parse_tracks(&mut io::stdin().lock())?;
     if part2 {
+        println!("Last minecart: {:?}", tracks.find_last_minecart());
     } else {
         println!("First collision: {:?}", tracks.advance_till_crash());
     }
@@ -117,11 +115,27 @@ struct Tracks {
 
 impl Tracks {
     fn advance(&mut self) -> Result<(), Collision> {
+        let mut first_collision = None;
         self.minecarts.sort_by_key(|m| (m.position.y, m.position.x));
-        for minecart in self.minecarts.iter_mut() {
-            minecart.advance(&self.contents);
+        let mut i = 0;
+        while i < self.minecarts.len() {
+            self.minecarts[i].advance(&self.contents);
+            if let Some(collision) = self.find_collision() {
+                let rindex = self.minecarts.iter().rposition(|m| m.position == collision.0).unwrap();
+                self.minecarts.retain(|m| m.position != collision.0);
+                if first_collision.is_none() {
+                    first_collision = Some(collision);
+                }
+                // Hacky
+                if rindex == i {
+                    i = i.saturating_sub(2);
+                } else {
+                    i = i.saturating_sub(1);
+                }
+            }
+            i += 1;
         }
-        if let Some(collision) = self.find_collision() {
+        if let Some(collision) = first_collision {
             return Err(collision);
         }
         Ok(())
@@ -139,8 +153,19 @@ impl Tracks {
     }
 
     fn advance_till_crash(&mut self) -> Collision {
-        while let Ok(_) = self.advance() {};
-        self.find_collision().unwrap()
+        loop {
+            let res = self.advance();
+            if let Err(collision) = res {
+                return collision;
+            }
+        }
+    }
+
+    fn find_last_minecart(&mut self) -> Coord {
+        while self.minecarts.len() > 1 {
+            self.advance_till_crash();
+        }
+        return self.minecarts[0].position;
     }
 }
 
@@ -195,16 +220,6 @@ fn parse_minecart(c: char, x: usize, y: usize) -> Option<Minecart> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fmt::Debug;
-
-    /// This function allows us to assert that a Result is
-    /// Ok(expected) without requiring PartialEq on the Error type.
-    fn assert_result_ok<T: Debug + PartialEq>(r: Result<T, Error>, expected: T) {
-        match r {
-            Ok(v) => assert_eq!(v, expected),
-            Err(e) => panic!("got Err: {}, local backtrace: {}", e, e.backtrace()),
-        }
-    }
 
     const TRACKS: &str = r"/->-\        
 |   |  /----\
@@ -248,6 +263,20 @@ mod tests {
     #[test]
     fn test_advance_till_crash() {
         let mut tracks = parse_tracks(&mut TRACKS.as_bytes()).expect("Couldn't parse tracks");
-        assert_eq!(tracks.advance_till_crash(), Collision(Coord { x: 7, y: 3}));
+        assert_eq!(tracks.advance_till_crash(), Collision(Coord { x: 7, y: 3 }));
+    }
+
+    const TRACKS2: &str = r"/>-<\  
+|   |  
+| /<+-\
+| | | v
+\>+</ |
+  |   ^
+  \<->/";
+
+    #[test]
+    fn test_find_last_minecart() {
+        let mut tracks = parse_tracks(&mut TRACKS2.as_bytes()).expect("Couldn't parse tracks");
+        assert_eq!(tracks.find_last_minecart(), Coord { x: 6, y: 4 });
     }
 }
