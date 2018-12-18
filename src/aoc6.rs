@@ -13,10 +13,10 @@ pub fn aoc6(part2: bool) -> Result<(), Error> {
     Ok(())
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-struct Coord {
-    x: i64,
-    y: i64,
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+pub struct Coord {
+    pub x: i64,
+    pub y: i64,
 }
 
 impl Coord {
