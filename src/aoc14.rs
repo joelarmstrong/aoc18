@@ -1,7 +1,6 @@
 use std::io;
 use std::io::Read;
 use failure::Error;
-use crate::aoc6::Coord;
 
 pub fn aoc14(part2: bool) -> Result<(), Error> {
     let mut input_str = String::new();
@@ -9,6 +8,7 @@ pub fn aoc14(part2: bool) -> Result<(), Error> {
     let input: usize = input_str.trim().parse()?;
     let mut rs = RecipeScoreboard::new();
     if part2 {
+        println!("Scores: {}", rs.recipes_before_digits_appear(input));
     } else {
         println!("Scores: {}", rs.scores_after_n_recipes(input).iter().map(|n| format!("{}", n)).collect::<String>());
     }
@@ -32,7 +32,7 @@ impl RecipeScoreboard {
 
     fn new_recipes(&self) -> Vec<u8> {
         let sum = self.recipes[self.elf_1] + self.recipes[self.elf_2];
-        digits(sum)
+        digits(sum as usize)
     }
 
     fn advance(&mut self) {
@@ -47,16 +47,35 @@ impl RecipeScoreboard {
         }
         &self.recipes[steps..steps + 10]
     }
+
+    fn recipes_before_digits_appear(&mut self, input: usize) -> usize {
+        let digits = &digits(input)[..];
+        let mut previous_recipes = None;
+        while previous_recipes.is_none() {
+            if self.recipes.len() >= digits.len() {
+                let start = self.recipes.len() - digits.len();
+                if &self.recipes[start..] == digits {
+                    previous_recipes = Some(start)
+                }
+                let start = start.saturating_sub(1);
+                if &self.recipes[start..self.recipes.len() - 1] == digits {
+                    previous_recipes = Some(start)
+                }
+            }
+            self.advance();
+        }
+        previous_recipes.unwrap()
+    }
 }
 
-fn digits(n: u8) -> Vec<u8> {
+fn digits(n: usize) -> Vec<u8> {
     let mut digits = vec![];
     let mut num = n;
     while num >= 10 {
-        digits.push(num % 10);
+        digits.push((num % 10) as u8);
         num /= 10;
     }
-    digits.push(num);
+    digits.push(num as u8);
     digits.reverse();
     digits
 }
@@ -85,5 +104,17 @@ mod tests {
 
         let mut rs = RecipeScoreboard::new();
         assert_eq!(rs.scores_after_n_recipes(2018), &[5, 9, 4, 1, 4, 2, 9, 8, 8, 2]);
+    }
+
+    #[test]
+    fn test_recipes_before_digits_appear() {
+        let mut rs = RecipeScoreboard::new();
+        assert_eq!(rs.recipes_before_digits_appear(51589), 9);
+
+        let mut rs = RecipeScoreboard::new();
+        assert_eq!(rs.recipes_before_digits_appear(92510), 18);
+
+        let mut rs = RecipeScoreboard::new();
+        assert_eq!(rs.recipes_before_digits_appear(59414), 2018);
     }
 }
