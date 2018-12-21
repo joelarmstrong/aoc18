@@ -51,6 +51,8 @@ fn main() -> Result<(), Error> {
                     .arg(Arg::with_name("part2")))
         .subcommand(SubCommand::with_name("aoc16")
                     .arg(Arg::with_name("part2")))
+        .subcommand(SubCommand::with_name("aoc17")
+                    .arg(Arg::with_name("part2")))
         .get_matches();
     match matches.subcommand() {
         ("aoc1", Some(sub_matches)) => aoc1::aoc1(sub_matches.is_present("part2"))?,
@@ -69,6 +71,7 @@ fn main() -> Result<(), Error> {
         ("aoc14", Some(sub_matches)) => aoc14::aoc14(sub_matches.is_present("part2"))?,
         ("aoc15", Some(sub_matches)) => aoc15::aoc15(sub_matches.is_present("part2"))?,
         ("aoc16", Some(sub_matches)) => aoc16::aoc16(sub_matches.is_present("part2"))?,
+        ("aoc17", Some(sub_matches)) => aoc17::aoc17(sub_matches.is_present("part2"))?,
         _ => panic!("Invalid subcommand")
     }
     Ok(())
