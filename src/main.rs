@@ -14,6 +14,7 @@ pub mod aoc13;
 pub mod aoc14;
 pub mod aoc15;
 pub mod aoc16;
+pub mod aoc17;
 use clap::{Arg, App, SubCommand};
 use failure::Error;
 
