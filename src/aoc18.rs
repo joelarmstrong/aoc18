@@ -1,16 +1,15 @@
-use std::collections::HashSet;
-use std::cmp::min;
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Display;
 use std::io;
 use std::io::BufRead;
-use std::ops::RangeInclusive;
-use failure::{Error, bail, format_err};
-use regex::Regex;
+use failure::{Error, bail};
 
 pub fn aoc18(part2: bool) -> Result<(), Error> {
     let mut lumber = parse_lumber(&mut io::stdin().lock())?;
     if part2 {
+        lumber.advance_multiple(1000000000);
+        println!("Resource value after 1000000000 steps: {}", lumber.resource_value());
     } else {
         lumber.advance_multiple(10);
         println!("Resource value: {}", lumber.resource_value());
@@ -18,7 +17,7 @@ pub fn aoc18(part2: bool) -> Result<(), Error> {
     Ok(())
 }
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
 enum AcreContents {
     Open,
     Trees,
@@ -71,8 +70,20 @@ impl LumberCollection {
     }
 
     fn advance_multiple(&mut self, n: usize) {
-        for _ in 0..n {
+        // Timestep at which we last saw a given configuration.
+        let mut last_seen = HashMap::new();
+        for i in 0..n {
             self.advance();
+            if let Some(j) = last_seen.get(&self.grid) {
+                // Found a cycle.
+                let cycle_length = i - j;
+                let remainder = (n - i - 1) % cycle_length;
+                for _ in 0..remainder {
+                    self.advance();
+                }
+                break;
+            }
+            last_seen.insert(self.grid.clone(), i);
         }
     }
 
