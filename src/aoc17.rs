@@ -8,9 +8,10 @@ use regex::Regex;
 
 pub fn aoc17(part2: bool) -> Result<(), Error> {
     let mut reservoir = parse_veins(&mut io::stdin().lock())?;
+    reservoir.fill_with_water();
     if part2 {
+        println!("Squares of water at rest: {}", reservoir.count_water_at_rest());
     } else {
-        reservoir.fill_with_water();
         println!("Watered squares: {}", reservoir.count_water());
     }
     Ok(())
@@ -79,7 +80,6 @@ impl Reservoir {
         let mut done_sources = HashSet::new();
         while source_stack.len() != 0 {
             let (source_x, source_y) = source_stack.pop().unwrap();
-            println!("source: {} {}", source_x, source_y);
             if self.get(source_x, source_y) == Some(&Water) {
                 // Overflowed back up to the source.
                 done_sources.insert((source_x, source_y));
@@ -87,7 +87,6 @@ impl Reservoir {
             }
             let mut cur_y = source_y;
             loop {
-                println!("{} {}", source_x, cur_y);
                 if cur_y >= self.grid.len() {
                     // Out of bounds.
                     done_sources.insert((source_x, source_y));
@@ -100,29 +99,21 @@ impl Reservoir {
                     let boundary = self.get_boundary(source_x, cur_y);
                     match boundary {
                         Bounded(range) => {
-                            println!("bounded");
                             for x in range {
                                 *self.get_mut(x, cur_y).unwrap() = Water;
                             }
                             if !done_sources.contains(&(source_x, source_y)) {
                                 source_stack.push((source_x, source_y));
-                            } else {
-                                println!("Attempt to revisit source {}, {}", source_x, source_y);
                             }
                             break;
                         },
                         Spill(spill1, spill2_opt) => {
-                            println!("spill {} {:?}", spill1, spill2_opt);
                             if !done_sources.contains(&(spill1, cur_y)) {
                                 source_stack.push((spill1, cur_y));
-                            } else {
-                                println!("Attempt to revisit source {}, {}", spill1, cur_y);
                             }
                             if let Some(spill2) = spill2_opt {
                                 if !done_sources.contains(&(spill2, cur_y)) {
                                     source_stack.push((spill2, cur_y));
-                                } else {
-                                    println!("Attempt to revisit source {}, {}", spill2, cur_y);
                                 }
                             }
                             break;
@@ -173,7 +164,6 @@ impl Reservoir {
             }
             cur_x += 1;
         }
-        println!("wall_start {:?} wall_end {:?}", wall_start, wall_end);
         if let (Some(start), Some(end)) = (wall_start, wall_end) {
             return Bounded(start + 1..=end - 1);
         }
@@ -191,6 +181,18 @@ impl Reservoir {
         for row in self.grid.iter().skip(self.y_min) {
             for column in row {
                 if column == &Water || column == &DampSand {
+                    count += 1;
+                }
+            }
+        }
+        count
+    }
+
+    fn count_water_at_rest(&self) -> usize {
+        let mut count = 0;
+        for row in self.grid.iter().skip(self.y_min) {
+            for column in row {
+                if column == &Water {
                     count += 1;
                 }
             }
@@ -266,6 +268,8 @@ x=504, y=10..13
 y=13, x=498..504";
         let mut reservoir = parse_veins(&mut input.as_bytes()).expect("Couldn't parse");
         reservoir.fill_with_water();
+
         assert_eq!(reservoir.count_water(), 57);
+        assert_eq!(reservoir.count_water_at_rest(), 29);
     }
 }
