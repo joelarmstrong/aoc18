@@ -25,7 +25,7 @@ pub fn aoc16(part2: bool) -> Result<(), Error> {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
-enum Opcode {
+pub enum Opcode {
     AddR,
     AddI,
     MulR,
@@ -46,18 +46,18 @@ enum Opcode {
 
 use self::Opcode::*;
 
-struct CPU {
-    registers: Vec<usize>,
+pub struct CPU {
+    pub registers: Vec<usize>,
 }
 
 impl CPU {
-    fn new(registers: Vec<usize>) -> Self {
+    pub fn new(registers: Vec<usize>) -> Self {
         Self {
             registers,
         }
     }
 
-    fn apply_op(&mut self, op: &Opcode, arg1: usize, arg2: usize, arg3: usize) {
+    pub fn apply_op(&mut self, op: &Opcode, arg1: usize, arg2: usize, arg3: usize) {
         self.registers[arg3] = match op {
             AddR => self.registers[arg1] + self.registers[arg2],
             AddI => self.registers[arg1] + arg2,
