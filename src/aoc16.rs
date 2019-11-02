@@ -46,6 +46,7 @@ pub enum Opcode {
 
 use self::Opcode::*;
 
+#[derive(Clone)]
 pub struct CPU {
     pub registers: Vec<usize>,
 }

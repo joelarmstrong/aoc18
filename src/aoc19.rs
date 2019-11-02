@@ -50,25 +50,29 @@ fn get_factorization(n: usize) -> Vec<usize> {
 
 type Instruction = (Opcode, usize, usize, usize);
 
-struct JumpingCPU {
-    cpu: CPU,
-    program: Vec<Instruction>,
+#[derive(Clone)]
+pub struct JumpingCPU {
+    pub cpu: CPU,
+    pub program: Vec<Instruction>,
     /// Index of register that acts as the instruction pointer.
     ip_index: usize,
     /// Current instruction pointer.
-    ip: usize,
+    pub ip: usize,
+    /// Number of steps carried out so far.
+    pub steps: usize,
 }
 
 impl JumpingCPU {
     /// Take a single step of execution. Returns false if the IP
     /// points outside of the program.
-    fn step(&mut self) -> bool {
+    pub fn step(&mut self) -> bool {
         let instruction_opt = self.program.get(self.ip);
         if let Some(instruction) = instruction_opt {
             self.cpu.registers[self.ip_index] = self.ip;
             self.cpu.apply_op(&instruction.0, instruction.1, instruction.2, instruction.3);
             self.ip = self.cpu.registers[self.ip_index];
             self.ip += 1;
+            self.steps += 1;
             true
         } else {
             false
@@ -76,13 +80,13 @@ impl JumpingCPU {
     }
 
     /// Run the program until the IP points outside of the program.
-    fn run(&mut self) {
+    pub fn run(&mut self) {
         while self.step() {
         }
     }
 }
 
-fn parse_program(input: &mut impl BufRead) -> Result<JumpingCPU, Error> {
+pub fn parse_program(input: &mut impl BufRead) -> Result<JumpingCPU, Error> {
     let ip_set = Regex::new(r"#ip ([0-9]+)")?;
     let instruction = Regex::new(r"(.*) ([0-9]+) ([0-9]+) ([0-9]+)")?;
     let mut ip_index = 0;
@@ -124,6 +128,7 @@ fn parse_program(input: &mut impl BufRead) -> Result<JumpingCPU, Error> {
         program,
         ip: 0,
         ip_index,
+        steps: 0,
     })
 }
 
